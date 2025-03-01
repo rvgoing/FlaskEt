@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Weather Forecast</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* ✅ Ensure the chart container scales properly */
+        .chart-container {
+            width: 90vw;
+            /* ✅ 90% of viewport width */
+            height: 60vh;
+            /* ✅ 60% of viewport height */
+            max-width: 1200px;
+            /* ✅ Limit max width */
+            margin: auto;
+            /* ✅ Center the chart */
+        }
+
+        /* ✅ Style for time period label */
+        #timePeriodLabel {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff5733;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1 style="text-align: center;">Weather Forecast</h1>
+
+    <!-- ✅ Display actual time range -->
+    <div id="timePeriodLabel">Loading...</div>
+
+    <div style="text-align: center;">
+        <label for="tslot">Select Time Slots:</label>
+        <select id="tslot" onchange="fetchWeatherData()">
+            <option value="10" selected>10</option>
+            <option value="30">30</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="500">500</option>
+            <option value="1000">1000</option>
+        </select>
+        <!--         <button onclick="window.location.href='/'">Back to Main Page</button> -->
+        <button onclick="window.location.href='/'" style="margin-bottom: 20px;">
+            Back to Main Page
+        </button>
+        
+    </div>
+
+
+
+
+    <!-- ✅ Responsive Chart Container -->
+    <div class="chart-container">
+        <canvas id="weatherChart"></canvas>
+    </div>
+
+    <script>
+        let weatherChart = null;
+
+        function fetchWeatherData() {
+            const tslot = document.getElementById("tslot").value;
+
+            fetch(`/api/weather?tslot=${tslot}`)
+                .then(response => response.json())
+                .then(data => {
+                    const ctx = document.getElementById("weatherChart").getContext("2d");
+
+                    if (weatherChart) {
+                        weatherChart.destroy();
+                    }
+
+                    const datasets = Object.keys(data).map((city, index) => {
+                        const colors = ["blue", "red", "yellow"];
+                        return {
+                            label: `${city} Temperature (°C)`,
+                            data: data[city].temps,
+                            borderColor: colors[index % colors.length],
+                            fill: false,
+                            pointRadius: 0,
+                            tension: 0.4
+                        };
+                    });
+
+                    const labels = data[Object.keys(data)[0]].labels;
+
+                    // Get the current time and format it as HH:MM
+                    const currentTime = new Date();
+                    const formattedTime = currentTime.toTimeString().split(' ')[0].substring(0, 5);
+
+                    // Add the current time to the beginning of the labels array
+                    labels.unshift(formattedTime);
+
+                    document.getElementById("timePeriodLabel").innerText =
+                    `Showing data from ${labels[0]} to ${labels[labels.length - 1]}`;
+
+                    document.getElementById("timePeriodLabel").innerText =
+                        `Showing data from ${labels[0]} to ${labels[labels.length - 1]}`;
+
+                    weatherChart = new Chart(ctx, {
+                        type: "line",
+                        data: {
+                            labels: labels,
+                            datasets: datasets
+                        },
+                        options: {
+                            responsive: true,   // ✅ Auto resizes based on screen size
+                            maintainAspectRatio: false,  // ✅ Prevents distortion
+                            scales: {
+                                x: {
+                                    title: { display: true, text: "Time (HH:MM)" },
+                                    ticks: { autoSkip: true, maxTicksLimit: 10 }
+                                },
+                                y: {
+                                    title: { display: true, text: "Temperature (°C)" },
+                                    suggestedMin: 0,  // ✅ Prevents scale from starting too low
+                                    suggestedMax: 40  // ✅ Adjust this based on expected values
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch(error => console.error("Error fetching data:", error));
+        }
+
+        window.onload = fetchWeatherData;
+    </script>
+</body>
+
+</html>
